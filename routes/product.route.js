@@ -10,6 +10,7 @@ productRouter
 
 productRouter
   .route("/:id")
+  .get(protectedRoute, productController.getProductById)
   .patch(protectedRoute, productController.updateProduct)
   .delete(protectedRoute, productController.deleteProduct);
 module.exports = productRouter;

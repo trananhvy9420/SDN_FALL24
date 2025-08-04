@@ -203,7 +203,7 @@
             }" class="product-image" /></td>
                     <td>${product.price}</td>
                     <td>${product.isFeature ? "Yes" : "No"}</td>
-                    <td>${categoryName}</td>
+                    <td>${product.category.categoryName}</td>
                     <td class="actions-cell">
                     <div>
                         <button class="btn btn-detail" data-id="${
@@ -255,26 +255,26 @@
         //su ly event cac button ne
         tableBody.addEventListener("click", (event) => {
           const target = event.target;
-          const deviceId = target.dataset.id;
+          const productID = target.dataset.id;
 
           if (target.classList.contains("btn-detail")) {
-            if (deviceId) {
-              window.location.href = `/device/${deviceId}`;
+            if (productID) {
+              window.location.href = `/product/${productID}`;
             }
           }
           if (target.classList.contains("btn-update")) {
-            if (deviceId) {
-              window.location.href = `/updatedevice/${deviceId}`;
+            if (productID) {
+              window.location.href = `/updateproduct/${productID}`;
             }
           }
 
           if (target.classList.contains("btn-delete")) {
             if (
-              deviceId &&
-              confirm(`Do you want to delete device with ID: ${deviceId}}?`)
+              productID &&
+              confirm(`Do you want to delete product with ID: ${productID}?`)
             ) {
               axios
-                .delete(`${devicesApiUrl}/${deviceId}`, config)
+                .delete(`${productsAPIURL}/${productID}`, config)
                 .then(() => {
                   alert("Xóa thành công!");
                   target.closest("tr").remove();

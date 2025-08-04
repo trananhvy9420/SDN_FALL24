@@ -2,7 +2,7 @@ const Product = require("../models/product.model");
 const mongoose = require("mongoose");
 const getAllProducts = async (req, res) => {
   try {
-    const products = await Product.find();
+    const products = await Product.find().populate("category");
     const response = {
       message: "Products fetched successfully.",
       data: products,
@@ -89,7 +89,7 @@ const getProductById = async (req, res) => {
     }
     const response = {
       message: "Product fetched successfully.",
-      product: product,
+      data: product,
     };
     return res.status(200).json(response);
   } catch (error) {
