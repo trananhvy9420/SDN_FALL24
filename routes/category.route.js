@@ -11,6 +11,6 @@ categoryRouter
 categoryRouter
   .route("/:id")
   .get(protectedRoute, categoryController.getCategoryById)
-  .put(protectedRoute, categoryController.updateCategory)
+  .patch(protectedRoute, categoryController.updateCategory)
   .delete(protectedRoute, categoryController.deleteCategory);
 module.exports = categoryRouter;

@@ -108,15 +108,24 @@ const updateProduct = async (req, res) => {
   const { productName, productDescription, price, category, isFeature, image } =
     req.body;
   const updateData = {};
-  if (productName !== undefined) {
+  if (productName) {
     if (typeof productName !== "string" || productName.trim() === "") {
       return res
         .status(400)
         .json({ message: "Product name must be a non-empty string." });
     }
+    const existingProduct = await Product.findOne({
+      productName: productName,
+      _id: { $ne: id },
+    });
+    if (existingProduct) {
+      return res
+        .status(400)
+        .json({ message: "Product with this name already exists." });
+    }
     updateData.productName = productName;
   }
-  if (productDescription !== undefined) {
+  if (productDescription) {
     if (
       typeof productDescription !== "string" ||
       productDescription.trim() === ""
@@ -127,7 +136,7 @@ const updateProduct = async (req, res) => {
     }
     updateData.productDescription = productDescription;
   }
-  if (price !== undefined) {
+  if (price) {
     if (typeof price !== "number" || price < 0 || price > 9999) {
       return res
         .status(400)
@@ -135,31 +144,26 @@ const updateProduct = async (req, res) => {
     }
     updateData.price = price;
   }
-  if (category !== undefined) {
+  if (category) {
     if (!mongoose.Types.ObjectId.isValid(category)) {
       return res.status(400).json({ message: "Invalid category ID." });
     }
     updateData.category = category;
   }
-
-  if (isFeature !== undefined) {
+  if (isFeature) {
     if (typeof isFeature !== "boolean") {
       return res.status(400).json({ message: "isFeature must be a boolean." });
     }
     updateData.isFeature = isFeature;
   }
-
-  if (image !== undefined) {
+  if (image) {
     updateData.image = image;
   }
-
-  // Check if at least one field is provided for update
   if (Object.keys(updateData).length === 0) {
     return res
       .status(400)
       .json({ message: "At least one field must be provided for update." });
   }
-
   try {
     const updatedProduct = await Product.findByIdAndUpdate(id, updateData, {
       new: true,

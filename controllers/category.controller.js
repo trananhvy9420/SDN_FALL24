@@ -64,25 +64,39 @@ const updateCategory = async (req, res) => {
     return res.status(400).json({ message: "Invalid category ID." });
   }
   const { categoryName, categoryDescription } = req.body;
-  if (!categoryName || !categoryDescription) {
-    return res
-      .status(400)
-      .json({ message: "Category name and description are required." });
+  const updateData = {};
+  if (categoryName) {
+    const existingCategory = await Category.findOne({
+      categoryName: categoryName,
+    });
+    if (existingCategory && existingCategory._id.toString() !== id) {
+      return res
+        .status(400)
+        .json({ message: "Category with this name already exists." });
+    }
+    updateData.categoryName = categoryName;
   }
-  const existingCategory = await Category.findOne({
-    categoryName: categoryName,
-  });
-  if (existingCategory && existingCategory._id.toString() !== id) {
+  if (categoryDescription) {
+    if (
+      typeof categoryDescription !== "string" ||
+      categoryDescription.trim() === ""
+    ) {
+      return res
+        .status(400)
+        .json({ message: "Category description must be a non-empty string." });
+    }
+    updateData.categoryDescription = categoryDescription;
+  }
+  if (Object.keys(updateData).length === 0) {
     return res
       .status(400)
-      .json({ message: "Category with this name already exists." });
+      .json({ message: "At least one field must be provided for update." });
   }
   try {
-    const updatedCategory = await Category.findByIdAndUpdate(
-      id,
-      { categoryName: categoryName, categoryDescription: categoryDescription },
-      { new: true, runValidators: true }
-    );
+    const updatedCategory = await Category.findByIdAndUpdate(id, updateData, {
+      new: true,
+      runValidators: true,
+    });
     if (!updatedCategory) {
       return res.status(404).json({ message: "Category not found." });
     }
