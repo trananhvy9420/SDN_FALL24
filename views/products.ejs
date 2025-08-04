@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>List Devices</title>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <style>
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+          sans-serif;
+        margin: 2em;
+        background-color: #f7f7f7;
+        color: #333;
+      }
+      h1 {
+        color: #1a1a1a;
+      }
+      .controls-container {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1.5em;
+      }
+      .filter-container {
+        display: flex;
+        align-items: center;
+      }
+      .filter-container label {
+        margin-right: 10px;
+        font-weight: bold;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        background-color: white;
+        border-radius: 8px;
+        overflow: hidden;
+      }
+      th,
+      td {
+        padding: 15px;
+        border-bottom: 1px solid #ddd;
+        text-align: left;
+        vertical-align: middle;
+      }
+      th {
+        background-color: #007bff;
+        color: white;
+      }
+      tr:hover {
+        background-color: #f1f1f1;
+      }
+      .error {
+        color: #d8000c;
+        text-align: center;
+        font-weight: bold;
+      }
+      .btn {
+        padding: 8px 12px;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        color: white;
+        font-weight: bold;
+        transition: opacity 0.2s;
+      }
+      .btn:hover {
+        opacity: 0.8;
+      }
+      #categoriesFilter {
+        padding: 8px 12px;
+        border-radius: 5px;
+        border: 1px solid #ccc;
+        background-color: white;
+      }
+      .btn-create {
+        background-color: #28a745; /* Green color for create button */
+      }
+      .btn-detail {
+        background-color: #17a2b8;
+      }
+      .btn-delete {
+        background-color: #dc3545;
+      }
+      .btn-update {
+        background-color: #007bff;
+      }
+      .actions-cell div {
+        margin-bottom: 5px;
+      }
+      .product-image {
+        width: 80px;
+        height: 80px;
+        object-fit: cover;
+        border-radius: 8px;
+        border: 2px solid #ddd;
+        transition: transform 0.2s ease;
+        cursor: pointer;
+      }
+      .product-image:hover {
+        transform: scale(1.1);
+        border-color: #007bff;
+        box-shadow: 0 4px 8px rgba(0, 123, 255, 0.3);
+      }
+    </style>
+  </head>
+  <body>
+    <h1>List Devices</h1>
+    <div class="controls-container">
+      <div class="filter-container">
+        <label for="categoriesFilter">Filter by category:</label>
+        <select id="categoriesFilter">
+          <option value="all">All categories</option>
+        </select>
+      </div>
+      <button class="btn btn-create">Create section</button>
+    </div>
+
+    <table id="sectionsTable">
+      <thead>
+        <tr>
+          <th>Product Name</th>
+          <th>Product Description</th>
+          <th>Image</th>
+          <th>Price</th>
+          <th>Feature</th>
+          <th>Category</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody id="tableBody"></tbody>
+    </table>
+
+    <script>
+      document.addEventListener("DOMContentLoaded", async () => {
+        const tableBody = document.getElementById("tableBody");
+        const createButton = document.querySelector(".btn-create");
+        const categoriesFilter = document.getElementById("categoriesFilter");
+        const productsAPIURL = "http://localhost:3000/api/products";
+        const categoriesAPIURL = "http://localhost:3000/api/categories";
+        const accessToken = localStorage.getItem("access_token");
+        createButton.addEventListener("click", () => {
+          window.location.href = "/createdevice";
+        });
+
+        if (!accessToken) {
+          tableBody.innerHTML = `<tr><td colspan="5" class="error">Lỗi: Không tìm thấy token. Vui lòng đăng nhập lại.</td></tr>`;
+          return;
+        }
+
+        const config = {
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+          },
+        };
+
+        const displayError = (message) => {
+          tableBody.innerHTML = `<tr><td colspan="5" class="error">${message}</td></tr>`;
+        };
+
+        try {
+          const [categoryResponse, productResponse] = await Promise.all([
+            axios.get(categoriesAPIURL, config),
+            axios.get(productsAPIURL, config),
+          ]);
+          const categories =
+            categoryResponse.data.data || categoryResponse.data;
+          const products = productResponse.data.data || productResponse.data;
+          console.log("Categories:", categories);
+          console.log("Products:", products);
+          const categoryMap = new Map();
+          if (Array.isArray(categories)) {
+            categories.forEach((category) => {
+              categoryMap.set(category._id, category.categoryName);
+            });
+          }
+          //cho nay gan categoryMap vo cai selector
+          categoryMap.forEach((name, id) => {
+            const option = document.createElement("option");
+            option.value = id;
+            option.textContent = name;
+            categoriesFilter.appendChild(option);
+          });
+
+          tableBody.innerHTML = "";
+          if (!products || products.length === 0) {
+            tableBody.innerHTML = `<tr><td colspan="5" style="text-align:center;">Không có dữ liệu để hiển thị.</td></tr>`;
+            return;
+          }
+
+          products.forEach((product) => {
+            const row = tableBody.insertRow();
+            const categoryId = product.category?._id || product.category;
+            const categoryName = categoryMap.get(categoryId) || "N/A";
+            row.dataset.categoryId = categoryId || "";
+            row.innerHTML = `
+                    <td>${product.productName}</td>
+                    <td>${product.productDescription}</td>
+                    <td><img src="${product.image}" alt="${
+              product.productName
+            }" class="product-image" /></td>
+                    <td>${product.price}</td>
+                    <td>${product.isFeature ? "Yes" : "No"}</td>
+                    <td>${categoryName}</td>
+                    <td class="actions-cell">
+                    <div>
+                        <button class="btn btn-detail" data-id="${
+                          product._id
+                        }">Detail</button>
+                    </div>
+                    <div>
+                        <button class="btn btn-delete" data-id="${
+                          product._id
+                        }">Delete</button>
+                    </div>
+                      <div>
+                        <button class="btn btn-update" data-id="${
+                          product._id
+                        }">Update</button>
+                    </div>
+                    </td>
+                `;
+          });
+        } catch (error) {
+          console.error("Lỗi khi tải dữ liệu:", error);
+          let errorMessage =
+            "Không thể kết nối tới API. Vui lòng kiểm tra lại.";
+          if (
+            error.response &&
+            (error.response.status === 401 || error.response.status === 403)
+          ) {
+            errorMessage = "Lỗi xác thực. Token không hợp lệ hoặc đã hết hạn.";
+          }
+          displayError(errorMessage);
+        }
+        //su lien su kien event change neu co su thay doi o select thi tu fetch data neu cai nao chua id do thi hien khong thi style no thanh none
+        categoriesFilter.addEventListener("change", (e) => {
+          const selectedCategoryId = e.target.value;
+          const rows = tableBody.querySelectorAll("tr");
+          rows.forEach((row) => {
+            if (row.querySelector('td[colspan="5"]')) return;
+            const rowCategoryId = row.dataset.categoryId;
+            if (
+              selectedCategoryId === "all" ||
+              rowCategoryId === selectedCategoryId
+            ) {
+              row.style.display = "";
+            } else {
+              row.style.display = "none";
+            }
+          });
+        });
+        //su ly event cac button ne
+        tableBody.addEventListener("click", (event) => {
+          const target = event.target;
+          const deviceId = target.dataset.id;
+
+          if (target.classList.contains("btn-detail")) {
+            if (deviceId) {
+              window.location.href = `/device/${deviceId}`;
+            }
+          }
+          if (target.classList.contains("btn-update")) {
+            if (deviceId) {
+              window.location.href = `/updatedevice/${deviceId}`;
+            }
+          }
+
+          if (target.classList.contains("btn-delete")) {
+            if (
+              deviceId &&
+              confirm(`Do you want to delete device with ID: ${deviceId}}?`)
+            ) {
+              axios
+                .delete(`${devicesApiUrl}/${deviceId}`, config)
+                .then(() => {
+                  alert("Xóa thành công!");
+                  target.closest("tr").remove();
+                })
+                .catch((error) => {
+                  console.error("Lỗi khi xóa:", error);
+                  alert("Đã xảy ra lỗi khi xóa section.");
+                });
+            }
+          }
+        });
+      });
+    </script>
+  </body>
+</html>
